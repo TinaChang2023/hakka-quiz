@@ -49,13 +49,13 @@
 
                 <!-- 左右分欄：左中文題目，右解答 -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-[160px] mb-8">
-                    <!-- 左側：中文題目 (對應試算表 Meaning) -->
+                    <!-- 左側：中文題目 -->
                     <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-center flex flex-col justify-center h-full">
                         <span class="text-xs uppercase tracking-wider text-slate-400 mb-2">中文題目</span>
                         <h3 id="quiz-question" class="text-2xl font-bold text-slate-700">-</h3>
                     </div>
 
-                    <!-- 右側：客語解答 (客語 Word 在上，音標 Phonetic 在下) -->
+                    <!-- 右側：客語解答 -->
                     <div id="quiz-answer-box" class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 text-center flex flex-col justify-center h-full">
                         <span class="text-xs uppercase tracking-wider text-indigo-400 mb-2">客語解答</span>
                         <div id="quiz-answer-content" class="text-slate-400 italic">
@@ -101,7 +101,7 @@
     </div>
 
     <script>
-        // 請確保這是你的 Google Apps Script 部署網址
+		// 請確保這是你的 Google Apps Script 部署網址
         const API_URL = "https://script.google.com/macros/s/AKfycbxspz-WqolHRSUCrmSVRyVW8_TaKZRHSPxbRW6WsyxNdt50Sxd4Dr8aCQlvxIh1jZa7/exec";
 
         let allWords = [];
@@ -167,11 +167,8 @@
         function loadQuestion() {
             const item = currentQuizList[currentIndex];
             document.getElementById('quiz-progress').innerText = `第 ${currentIndex + 1} 題 / 共 ${currentQuizList.length} 題`;
-            
-            // 左側固定顯示中文題目 (對應表格 Meaning)
             document.getElementById('quiz-question').innerText = item.Meaning || '';
 
-            // 隱藏解答
             const ansContent = document.getElementById('quiz-answer-content');
             ansContent.className = "text-slate-400 italic";
             ansContent.innerHTML = "(點擊下方按鈕顯示解答)";
@@ -185,7 +182,6 @@
             const ansContent = document.getElementById('quiz-answer-content');
             ansContent.className = "text-slate-800";
             
-            // 解答區：客語 Word 在第一行，音標 Phonetic 在下一行
             ansContent.innerHTML = `
                 <div class="text-2xl font-bold text-indigo-600 mb-1">${item.Word || ''}</div>
                 <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
@@ -222,7 +218,7 @@
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerText = "正在寫入雲端...";
+            btn.innerText = "正在檢查並寫入雲端...";
 
             const newWord = {
                 meaning: document.getElementById('input-meaning').value,
@@ -236,12 +232,16 @@
             })
             .then(res => res.json())
             .then(data => {
-                alert("新增成功！已同步至雲端試算表。");
-                document.getElementById('add-form').reset();
+                if (data.result === "duplicate") {
+                    alert("⚠️ 新增失敗：這個客語字（Word）已經存在於題庫中了！");
+                } else {
+                    alert("新增成功！已同步至雲端試算表。");
+                    document.getElementById('add-form').reset();
+                    fetchWords(); 
+                    switchTab('quiz'); 
+                }
                 btn.disabled = false;
                 btn.innerText = "確認新增並同步至雲端";
-                fetchWords(); 
-                switchTab('quiz'); 
             })
             .catch(err => {
                 alert("新增失敗，請稍後再試！");
