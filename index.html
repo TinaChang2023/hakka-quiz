@@ -16,10 +16,11 @@
             <p class="text-slate-500">雲端同步題庫，隨時隨地背單字</p>
         </header>
 
-        <!-- 分頁切換按鈕 -->
-        <div class="flex justify-center mb-6 space-x-4">
+        <!-- 分頁切換按鈕 (包含測驗區、新增單字區、找單字) -->
+        <div class="flex justify-center mb-6 space-x-3 flex-wrap gap-y-2">
             <button onclick="switchTab('quiz')" id="btn-quiz" class="px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition">測驗區</button>
             <button onclick="switchTab('add')" id="btn-add" class="px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition">新增單字區</button>
+            <button onclick="switchTab('search')" id="btn-search" class="px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition">找單字</button>
         </div>
 
         <!-- 載入中狀態 -->
@@ -98,10 +99,25 @@
                 <button type="submit" id="btn-submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">確認新增並同步至雲端</button>
             </form>
         </div>
+
+        <!-- 找單字區塊 -->
+        <div id="section-search" class="hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h2 class="text-xl font-semibold mb-4 text-center">字庫搜尋</h2>
+                <div class="flex gap-2">
+                    <input type="text" id="search-input" oninput="handleSearch()" placeholder="請輸入中文、客語或音標進行搜尋..." class="flex-1 border border-slate-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg">
+                    <button onclick="handleSearch()" class="bg-indigo-600 text-white px-6 rounded-xl font-semibold hover:bg-indigo-700 transition">搜尋</button>
+                </div>
+            </div>
+
+            <!-- 搜尋結果列表區 -->
+            <div id="search-results" class="space-y-4">
+                <div class="text-center text-slate-400 py-8">請在上方輸入關鍵字尋找單字</div>
+            </div>
+        </div>
     </div>
 
     <script>
-		// 請確保這是你的 Google Apps Script 部署網址
         const API_URL = "https://script.google.com/macros/s/AKfycbxspz-WqolHRSUCrmSVRyVW8_TaKZRHSPxbRW6WsyxNdt50Sxd4Dr8aCQlvxIh1jZa7/exec";
 
         let allWords = [];
@@ -127,22 +143,36 @@
                 });
         }
 
+        // 分頁切換 (新增 search 頁籤)
         function switchTab(tab) {
             const quizSec = document.getElementById('section-quiz');
             const addSec = document.getElementById('section-add');
+            const searchSec = document.getElementById('section-search');
+            
             const btnQuiz = document.getElementById('btn-quiz');
             const btnAdd = document.getElementById('btn-add');
+            const btnSearch = document.getElementById('btn-search');
+
+            // 預設全部按鈕變為未選取外觀
+            const inactiveClass = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
+            const activeClass = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
+
+            quizSec.classList.add('hidden');
+            addSec.classList.add('hidden');
+            searchSec.classList.add('hidden');
+            btnQuiz.className = inactiveClass;
+            btnAdd.className = inactiveClass;
+            btnSearch.className = inactiveClass;
 
             if (tab === 'quiz') {
                 quizSec.classList.remove('hidden');
-                addSec.classList.add('hidden');
-                btnQuiz.className = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
-                btnAdd.className = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
-            } else {
-                quizSec.classList.add('hidden');
+                btnQuiz.className = activeClass;
+            } else if (tab === 'add') {
                 addSec.classList.remove('hidden');
-                btnAdd.className = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
-                btnQuiz.className = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
+                btnAdd.className = activeClass;
+            } else if (tab === 'search') {
+                searchSec.classList.remove('hidden');
+                btnSearch.className = activeClass;
             }
         }
 
@@ -212,6 +242,58 @@
             document.getElementById('quiz-result').classList.add('hidden');
             document.getElementById('quiz-setup').classList.remove('hidden');
             document.getElementById('total-words-count').innerText = allWords.length;
+        }
+
+        // 搜尋功能邏輯
+        function handleSearch() {
+            const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+            const resultsContainer = document.getElementById('search-results');
+
+            if (!keyword) {
+                resultsContainer.innerHTML = `<div class="text-center text-slate-400 py-8">請在上方輸入關鍵字尋找單字</div>`;
+                return;
+            }
+
+            // 同時比對 Meaning(中文), Word(客語), Phonetic(音標)
+            const matched = allWords.filter(item => {
+                const meaning = (item.Meaning || '').toString().toLowerCase();
+                const word = (item.Word || '').toString().toLowerCase();
+                const phonetic = (item.Phonetic || '').toString().toLowerCase();
+                return meaning.includes(keyword) || word.includes(keyword) || phonetic.includes(keyword);
+            });
+
+            if (matched.length === 0) {
+                resultsContainer.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-sm text-center text-slate-400">沒有找到符合「${keyword}」的單字</div>`;
+                return;
+            }
+
+            // 渲染符合條件的卡片（完美複製測驗區解答的兩欄精美樣式）
+            let html = `<div class="text-sm text-slate-500 mb-2">找到 ${matched.length} 筆相關單字：</div>`;
+            
+            matched.forEach(item => {
+                html += `
+                    <div class="bg-white p-6 rounded-2xl shadow-sm mb-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-[140px]">
+                            <!-- 左側：中文題目 -->
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-center flex flex-col justify-center h-full">
+                                <span class="text-xs uppercase tracking-wider text-slate-400 mb-2">中文意思</span>
+                                <h3 class="text-2xl font-bold text-slate-700">${item.Meaning || ''}</h3>
+                            </div>
+
+                            <!-- 右側：客語與音標解答 -->
+                            <div class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 text-center flex flex-col justify-center h-full">
+                                <span class="text-xs uppercase tracking-wider text-indigo-400 mb-2">客語解答</span>
+                                <div class="text-slate-800">
+                                    <div class="text-2xl font-bold text-indigo-600 mb-1">${item.Word || ''}</div>
+                                    <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            resultsContainer.innerHTML = html;
         }
 
         function submitWord(e) {
