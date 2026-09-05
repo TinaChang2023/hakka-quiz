@@ -4,118 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>海陸客語練習小工具</title>
-    <!-- 引入 Tailwind CSS 讓手機電腦排版都好看 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f4f4;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-800">
+<body class="min-h-screen text-slate-800 flex flex-col md:flex-row">
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
-        <!-- 標題 -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-indigo-600 mb-2">🏔️ 海陸客語練習小工具</h1>
-            <p class="text-slate-500">雲端同步題庫，隨時隨地背單字</p>
+    <div class="md:hidden bg-white border-b border-slate-200 p-4 flex justify-between items-center sticky top-0 z-50">
+        <h1 class="font-bold text-lg text-emerald-700 flex items-center gap-2">
+            <img src="-PageUpload-1990-1-1990-01-0185211614671.gif" alt="Logo" class="w-7 h-7 object-contain"> 海陸客語練習
+        </h1>
+        <button onclick="toggleMobileMenu()" class="p-2 text-slate-600 focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+
+    <aside id="sidebar" class="hidden md:flex flex-col w-64 bg-[#f8fafa] border-r border-slate-200/80 p-6 min-h-screen fixed md:static z-40 inset-y-0 left-0 transition-all">
+        <div class="flex items-center gap-3 mb-8 px-2">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center p-1 shadow-sm">
+                <img src="-PageUpload-1990-1-1990-01-0185211614671.gif" alt="Logo" class="w-full h-full object-contain">
+            </div>
+            <span class="font-bold text-slate-800 tracking-wide">客語學習小工具</span>
+        </div>
+
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">Menu</div>
+        <nav class="space-y-1 mb-8">
+            <button onclick="switchTab('quiz')" id="nav-quiz" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition bg-emerald-100/70 text-emerald-800 shadow-sm">
+                <span>🎯</span> 測驗區
+            </button>
+            <button onclick="switchTab('search')" id="nav-search" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                <span>🔍</span> 找單字
+            </button>
+            <button onclick="switchTab('add')" id="nav-add" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100">
+                <span>➕</span> 新增單字區
+            </button>
+        </nav>
+
+        <div class="mt-auto px-2 py-4 bg-emerald-50 rounded-2xl border border-emerald-100/60 text-center">
+            <div class="text-xs text-emerald-600 font-medium mb-1">雲端題庫總數</div>
+            <div id="sidebar-total-count" class="text-xl font-bold text-emerald-700">0</div>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-4 md:p-10 max-w-6xl mx-auto w-full">
+        
+        <header class="mb-8 bg-white/60 backdrop-blur-md p-4 md:px-8 md:py-5 rounded-2xl border border-slate-200/60 shadow-sm">
+            <div>
+                <h1 id="page-title" class="text-2xl md:text-3xl font-bold text-slate-800">測驗區</h1>
+                <p id="page-subtitle" class="text-sm text-slate-500 mt-0.5">雲端同步題庫，隨時隨地挑戰自我</p>
+            </div>
         </header>
 
-        <!-- 分頁切換按鈕 (包含測驗區、新增單字區、找單字) -->
-        <div class="flex justify-center mb-6 space-x-3 flex-wrap gap-y-2">
-            <button onclick="switchTab('quiz')" id="btn-quiz" class="px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition">測驗區</button>
-            <button onclick="switchTab('add')" id="btn-add" class="px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition">新增單字區</button>
-            <button onclick="switchTab('search')" id="btn-search" class="px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition">找單字</button>
+        <div id="loading" class="text-center py-20 bg-white rounded-3xl shadow-sm border border-slate-200/60">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent"></div>
+            <p class="mt-3 text-slate-500 font-medium">正在從雲端同步題庫...</p>
         </div>
 
-        <!-- 載入中狀態 -->
-        <div id="loading" class="text-center py-12">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
-            <p class="mt-2 text-slate-500">正在從雲端載入題庫...</p>
-        </div>
-
-        <!-- 測驗區塊 -->
         <div id="section-quiz" class="hidden space-y-6">
-            <!-- 初始設定：輸入題數 -->
-            <div id="quiz-setup" class="bg-white p-6 rounded-2xl shadow-sm text-center max-w-md mx-auto">
-                <h2 class="text-xl font-semibold mb-4">開始新測驗</h2>
-                <div class="mb-4">
-                    <label class="block text-sm text-slate-600 mb-2">請輸入本次測驗題數 (現有總題數: <span id="total-words-count">0</span>)</label>
-                    <input type="number" id="question-count" value="10" min="1" class="w-24 text-center border border-slate-300 rounded-lg py-2 px-3 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div id="quiz-setup" class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/60 max-w-lg mx-auto text-center space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 mb-1">開始新測驗</h2>
+                    <p class="text-sm text-slate-500">系統將從現有題庫中隨機抽題</p>
                 </div>
-                <button onclick="startQuiz()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">開始測驗</button>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
+                    <span class="text-sm text-slate-600 font-medium">本次測驗題數</span>
+                    <input type="number" id="question-count" value="10" min="1" class="w-20 text-center border border-slate-300 rounded-xl py-2 px-3 text-lg font-bold text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                </div>
+                <button onclick="startQuiz()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 transition">開始挑戰</button>
             </div>
 
-            <!-- 實際測驗進行中 -->
-            <div id="quiz-play" class="hidden bg-white p-8 rounded-2xl shadow-sm max-w-2xl mx-auto">
-                <div class="flex justify-between text-sm text-slate-400 mb-6">
-                    <span id="quiz-progress">第 1 題 / 共 10 題</span>
-                    <button onclick="resetQuizSetup()" class="text-indigo-600 hover:underline">重新設定</button>
+            <div id="quiz-play" class="hidden bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-200/60 max-w-3xl mx-auto">
+                <div class="flex justify-between items-center text-sm text-slate-400 mb-6 px-2">
+                    <span id="quiz-progress" class="font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">第 1 題 / 共 10 題</span>
+                    <button onclick="resetQuizSetup()" class="text-slate-500 hover:text-slate-800 underline">重新設定</button>
                 </div>
 
-                <!-- 左右分欄：左中文題目，右解答 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-[160px] mb-8">
-                    <!-- 左側：中文題目 -->
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-center flex flex-col justify-center h-full">
-                        <span class="text-xs uppercase tracking-wider text-slate-400 mb-2">中文題目</span>
-                        <h3 id="quiz-question" class="text-2xl font-bold text-slate-700">-</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch mb-8">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center flex flex-col justify-center min-h-[160px]">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 mb-2 font-semibold">中文題目</span>
+                        <h3 id="quiz-question" class="text-2xl font-bold text-slate-800">-</h3>
                     </div>
 
-                    <!-- 右側：客語解答 -->
-                    <div id="quiz-answer-box" class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 text-center flex flex-col justify-center h-full">
-                        <span class="text-xs uppercase tracking-wider text-indigo-400 mb-2">客語解答</span>
+                    <div class="bg-emerald-50/40 p-6 rounded-2xl border border-emerald-100 text-center flex flex-col justify-center min-h-[160px]">
+                        <span class="text-xs uppercase tracking-wider text-emerald-600/70 mb-2 font-semibold">客語解答</span>
                         <div id="quiz-answer-content" class="text-slate-400 italic">
                             (點擊下方按鈕顯示解答)
                         </div>
                     </div>
                 </div>
 
-                <!-- 控制按鈕 -->
-                <div class="flex space-x-4">
-                    <button id="btn-show-answer" onclick="revealAnswer()" class="flex-1 bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition">看解答</button>
-                    <button id="btn-next" onclick="nextQuestion()" class="hidden flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">下一題</button>
+                <div class="flex gap-4">
+                    <button id="btn-show-answer" onclick="revealAnswer()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-2xl font-bold shadow-md transition">看解答</button>
+                    <button id="btn-next" onclick="nextQuestion()" class="hidden flex-1 bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 transition">下一題</button>
                 </div>
             </div>
 
-            <!-- 測驗結算畫面 -->
-            <div id="quiz-result" class="hidden bg-white p-8 rounded-2xl shadow-sm text-center max-w-md mx-auto space-y-4">
-                <h2 class="text-2xl font-bold text-slate-800">🎉 測驗完成！</h2>
-                <p class="text-slate-600">你已經完成本輪的練習囉！</p>
-                <button onclick="resetQuizSetup()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">再測驗一次</button>
+            <div id="quiz-result" class="hidden bg-white p-8 rounded-3xl shadow-sm border border-slate-200/60 text-center max-w-md mx-auto space-y-6">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner">🎉</div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-1">測驗完成！</h2>
+                    <p class="text-slate-500">太棒了！你已經順利完成本輪的練習。</p>
+                </div>
+                <button onclick="resetQuizSetup()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 transition">再測驗一次</button>
             </div>
         </div>
 
-        <!-- 新增單字區塊 -->
-        <div id="section-add" class="hidden max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm">
-            <h2 class="text-xl font-semibold mb-6 text-center">新增客語單字</h2>
-            <form id="add-form" onsubmit="submitWord(event)" class="space-y-4">
+        <div id="section-search" class="hidden space-y-6 max-w-3xl mx-auto">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60">
+                <div class="flex gap-3">
+                    <input type="text" id="search-input" oninput="handleSearch()" placeholder="輸入中文、客語或音標搜尋單字..." class="flex-1 border border-slate-200 bg-slate-50 rounded-2xl py-3.5 px-5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-base">
+                    <button onclick="handleSearch()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 rounded-2xl font-bold transition shadow-md shadow-emerald-500/20">搜尋</button>
+                </div>
+            </div>
+
+            <div id="search-results" class="space-y-4">
+                <div class="text-center text-slate-400 py-12 bg-white rounded-3xl border border-slate-200/60">請在上方輸入關鍵字尋找單字</div>
+            </div>
+        </div>
+
+        <div id="section-add" class="hidden max-w-lg mx-auto bg-white p-8 rounded-3xl shadow-sm border border-slate-200/60">
+            <h2 class="text-xl font-bold text-slate-800 mb-6 text-center">新增客語單字</h2>
+            <form id="add-form" onsubmit="submitWord(event)" class="space-y-5">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">中文意義 (Meaning)</label>
-                    <input type="text" id="input-meaning" required placeholder="例如：配藥" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-sm font-semibold text-slate-600 mb-1.5">中文意義 (Meaning)</label>
+                    <input type="text" id="input-meaning" required placeholder="例如：配藥" class="w-full border border-slate-200 bg-slate-50 rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">客語寫法 (Word)</label>
-                    <input type="text" id="input-word" required placeholder="例如：合藥仔" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-sm font-semibold text-slate-600 mb-1.5">客語寫法 (Word)</label>
+                    <input type="text" id="input-word" required placeholder="例如：合藥仔" class="w-full border border-slate-200 bg-slate-50 rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">音標 (Phonetic)</label>
-                    <input type="text" id="input-phonetic" placeholder="例如：gab rhog` er" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-sm font-semibold text-slate-600 mb-1.5">音標 (Phonetic)</label>
+                    <input type="text" id="input-phonetic" placeholder="例如：gab rhog` er" class="w-full border border-slate-200 bg-slate-50 rounded-2xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white font-mono text-sm">
                 </div>
-                <button type="submit" id="btn-submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">確認新增並同步至雲端</button>
+                <button type="submit" id="btn-submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3.5 rounded-2xl font-bold shadow-lg shadow-emerald-500/25 transition mt-2">確認新增並同步</button>
             </form>
         </div>
-
-        <!-- 找單字區塊 -->
-        <div id="section-search" class="hidden max-w-2xl mx-auto space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm">
-                <h2 class="text-xl font-semibold mb-4 text-center">字庫搜尋</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="search-input" oninput="handleSearch()" placeholder="請輸入中文、客語或音標進行搜尋..." class="flex-1 border border-slate-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg">
-                    <button onclick="handleSearch()" class="bg-indigo-600 text-white px-6 rounded-xl font-semibold hover:bg-indigo-700 transition">搜尋</button>
-                </div>
-            </div>
-
-            <!-- 搜尋結果列表區 -->
-            <div id="search-results" class="space-y-4">
-                <div class="text-center text-slate-400 py-8">請在上方輸入關鍵字尋找單字</div>
-            </div>
-        </div>
-    </div>
+    </main>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxspz-WqolHRSUCrmSVRyVW8_TaKZRHSPxbRW6WsyxNdt50Sxd4Dr8aCQlvxIh1jZa7/exec";
@@ -135,7 +165,7 @@
                     allWords = data;
                     document.getElementById('loading').classList.add('hidden');
                     document.getElementById('section-quiz').classList.remove('hidden');
-                    document.getElementById('total-words-count').innerText = allWords.length;
+                    document.getElementById('sidebar-total-count').innerText = allWords.length;
                 })
                 .catch(err => {
                     alert("載入題庫失敗，請檢查 API 網址或網路連線！");
@@ -143,36 +173,60 @@
                 });
         }
 
-        // 分頁切換 (新增 search 頁籤)
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex', 'absolute', 'shadow-2xl');
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex', 'absolute', 'shadow-2xl');
+            }
+        }
+
         function switchTab(tab) {
             const quizSec = document.getElementById('section-quiz');
             const addSec = document.getElementById('section-add');
             const searchSec = document.getElementById('section-search');
             
-            const btnQuiz = document.getElementById('btn-quiz');
-            const btnAdd = document.getElementById('btn-add');
-            const btnSearch = document.getElementById('btn-search');
+            const navQuiz = document.getElementById('nav-quiz');
+            const navAdd = document.getElementById('nav-add');
+            const navSearch = document.getElementById('nav-search');
 
-            // 預設全部按鈕變為未選取外觀
-            const inactiveClass = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
-            const activeClass = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
+            const pageTitle = document.getElementById('page-title');
+            const pageSubtitle = document.getElementById('page-subtitle');
 
             quizSec.classList.add('hidden');
             addSec.classList.add('hidden');
             searchSec.classList.add('hidden');
-            btnQuiz.className = inactiveClass;
-            btnAdd.className = inactiveClass;
-            btnSearch.className = inactiveClass;
+
+            const inactiveClass = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition text-slate-600 hover:bg-slate-100";
+            const activeClass = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition bg-emerald-100/70 text-emerald-800 shadow-sm";
+
+            navQuiz.className = inactiveClass;
+            navAdd.className = inactiveClass;
+            navSearch.className = inactiveClass;
 
             if (tab === 'quiz') {
                 quizSec.classList.remove('hidden');
-                btnQuiz.className = activeClass;
-            } else if (tab === 'add') {
-                addSec.classList.remove('hidden');
-                btnAdd.className = activeClass;
+                navQuiz.className = activeClass;
+                pageTitle.innerText = "測驗區";
+                pageSubtitle.innerText = "雲端同步題庫，隨時隨地挑戰自我";
             } else if (tab === 'search') {
                 searchSec.classList.remove('hidden');
-                btnSearch.className = activeClass;
+                navSearch.className = activeClass;
+                pageTitle.innerText = "找單字";
+                pageSubtitle.innerText = "快速檢索中文、客語與專屬音標";
+            } else if (tab === 'add') {
+                addSec.classList.remove('hidden');
+                navAdd.className = activeClass;
+                pageTitle.innerText = "新增單字區";
+                pageSubtitle.innerText = "擴充雲端題庫，建立專屬客語字彙";
+            }
+
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('flex', 'absolute', 'shadow-2xl');
             }
         }
 
@@ -213,7 +267,7 @@
             ansContent.className = "text-slate-800";
             
             ansContent.innerHTML = `
-                <div class="text-2xl font-bold text-indigo-600 mb-1">${item.Word || ''}</div>
+                <div class="text-2xl font-bold text-emerald-700 mb-1">${item.Word || ''}</div>
                 <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
             `;
 
@@ -241,20 +295,18 @@
             document.getElementById('quiz-play').classList.add('hidden');
             document.getElementById('quiz-result').classList.add('hidden');
             document.getElementById('quiz-setup').classList.remove('hidden');
-            document.getElementById('total-words-count').innerText = allWords.length;
+            document.getElementById('sidebar-total-count').innerText = allWords.length;
         }
 
-        // 搜尋功能邏輯
         function handleSearch() {
             const keyword = document.getElementById('search-input').value.trim().toLowerCase();
             const resultsContainer = document.getElementById('search-results');
 
             if (!keyword) {
-                resultsContainer.innerHTML = `<div class="text-center text-slate-400 py-8">請在上方輸入關鍵字尋找單字</div>`;
+                resultsContainer.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white rounded-3xl border border-slate-200/60">請在上方輸入關鍵字尋找單字</div>`;
                 return;
             }
 
-            // 同時比對 Meaning(中文), Word(客語), Phonetic(音標)
             const matched = allWords.filter(item => {
                 const meaning = (item.Meaning || '').toString().toLowerCase();
                 const word = (item.Word || '').toString().toLowerCase();
@@ -263,30 +315,24 @@
             });
 
             if (matched.length === 0) {
-                resultsContainer.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-sm text-center text-slate-400">沒有找到符合「${keyword}」的單字</div>`;
+                resultsContainer.innerHTML = `<div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/60 text-center text-slate-400">沒有找到符合「${keyword}」的單字</div>`;
                 return;
             }
 
-            // 渲染符合條件的卡片（完美複製測驗區解答的兩欄精美樣式）
-            let html = `<div class="text-sm text-slate-500 mb-2">找到 ${matched.length} 筆相關單字：</div>`;
+            let html = `<div class="text-sm font-semibold text-slate-500 px-2">找到 ${matched.length} 筆相關單字：</div>`;
             
             matched.forEach(item => {
                 html += `
-                    <div class="bg-white p-6 rounded-2xl shadow-sm mb-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-[140px]">
-                            <!-- 左側：中文題目 -->
-                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-center flex flex-col justify-center h-full">
-                                <span class="text-xs uppercase tracking-wider text-slate-400 mb-2">中文意思</span>
-                                <h3 class="text-2xl font-bold text-slate-700">${item.Meaning || ''}</h3>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 text-center flex flex-col justify-center min-h-[120px]">
+                                <span class="text-xs uppercase tracking-wider text-slate-400 mb-1 font-semibold">中文意思</span>
+                                <h3 class="text-2xl font-bold text-slate-800">${item.Meaning || ''}</h3>
                             </div>
-
-                            <!-- 右側：客語與音標解答 -->
-                            <div class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 text-center flex flex-col justify-center h-full">
-                                <span class="text-xs uppercase tracking-wider text-indigo-400 mb-2">客語解答</span>
-                                <div class="text-slate-800">
-                                    <div class="text-2xl font-bold text-indigo-600 mb-1">${item.Word || ''}</div>
-                                    <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
-                                </div>
+                            <div class="bg-emerald-50/40 p-5 rounded-2xl border border-emerald-100 text-center flex flex-col justify-center min-h-[120px]">
+                                <span class="text-xs uppercase tracking-wider text-emerald-600/70 mb-1 font-semibold">客語解答</span>
+                                <div class="text-2xl font-bold text-emerald-700 mb-1">${item.Word || ''}</div>
+                                <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
                             </div>
                         </div>
                     </div>
@@ -300,7 +346,7 @@
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
-            btn.innerText = "正在檢查並寫入雲端...";
+            btn.innerText = "正在檢查並同步...";
 
             const newWord = {
                 meaning: document.getElementById('input-meaning').value,
@@ -323,13 +369,13 @@
                     switchTab('quiz'); 
                 }
                 btn.disabled = false;
-                btn.innerText = "確認新增並同步至雲端";
+                btn.innerText = "確認新增並同步";
             })
             .catch(err => {
                 alert("新增失敗，請稍後再試！");
                 console.error(err);
                 btn.disabled = false;
-                btn.innerText = "確認新增並同步至雲端";
+                btn.innerText = "確認新增並同步";
             });
         }
     </script>
