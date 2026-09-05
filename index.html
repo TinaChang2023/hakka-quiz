@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海陸客語練習小工具</title>
+    <!-- 引入 Tailwind CSS 讓手機電腦排版都好看 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        <!-- 標題 -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-indigo-600 mb-2">🏔️ 海陸客語練習小工具</h1>
+            <p class="text-slate-500">雲端同步題庫，隨時隨地背單字</p>
+        </header>
+
+        <!-- 分頁切換按鈕 -->
+        <div class="flex justify-center mb-6 space-x-4">
+            <button onclick="switchTab('quiz')" id="btn-quiz" class="px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition">測驗區</button>
+            <button onclick="switchTab('add')" id="btn-add" class="px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition">新增單字區</button>
+        </div>
+
+        <!-- 載入中狀態 -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+            <p class="mt-2 text-slate-500">正在從雲端載入題庫...</p>
+        </div>
+
+        <!-- 測驗區塊 -->
+        <div id="section-quiz" class="hidden space-y-6">
+            <!-- 初始設定：輸入題數 -->
+            <div id="quiz-setup" class="bg-white p-6 rounded-2xl shadow-sm text-center max-w-md mx-auto">
+                <h2 class="text-xl font-semibold mb-4">開始新測驗</h2>
+                <div class="mb-4">
+                    <label class="block text-sm text-slate-600 mb-2">請輸入本次測驗題數 (現有總題數: <span id="total-words-count">0</span>)</label>
+                    <input type="number" id="question-count" value="10" min="1" class="w-24 text-center border border-slate-300 rounded-lg py-2 px-3 text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button onclick="startQuiz()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">開始測驗</button>
+            </div>
+
+            <!-- 實際測驗進行中 -->
+            <div id="quiz-play" class="hidden bg-white p-8 rounded-2xl shadow-sm max-w-2xl mx-auto">
+                <div class="flex justify-between text-sm text-slate-400 mb-6">
+                    <span id="quiz-progress">第 1 題 / 共 10 題</span>
+                    <button onclick="resetQuizSetup()" class="text-indigo-600 hover:underline">重新設定</button>
+                </div>
+
+                <!-- 左右分欄：左中文題目，右解答 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center min-h-[160px] mb-8">
+                    <!-- 左側：中文題目 -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-center flex flex-col justify-center h-full">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 mb-2">中文題目</span>
+                        <h3 id="quiz-question" class="text-2xl font-bold text-slate-700">-</h3>
+                    </div>
+
+                    <!-- 右側：客語解答 -->
+                    <div id="quiz-answer-box" class="bg-indigo-50/50 p-6 rounded-xl border border-indigo-100 text-center flex flex-col justify-center h-full">
+                        <span class="text-xs uppercase tracking-wider text-indigo-400 mb-2">客語解答</span>
+                        <div id="quiz-answer-content" class="text-slate-400 italic">
+                            (點擊下方按鈕顯示解答)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 控制按鈕 -->
+                <div class="flex space-x-4">
+                    <button id="btn-show-answer" onclick="revealAnswer()" class="flex-1 bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition">看解答</button>
+                    <button id="btn-next" onclick="nextQuestion()" class="hidden flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">下一題</button>
+                </div>
+            </div>
+
+            <!-- 測驗結算畫面 -->
+            <div id="quiz-result" class="hidden bg-white p-8 rounded-2xl shadow-sm text-center max-w-md mx-auto space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800">🎉 測驗完成！</h2>
+                <p class="text-slate-600">你已經完成本輪的練習囉！</p>
+                <button onclick="resetQuizSetup()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">再測驗一次</button>
+            </div>
+        </div>
+
+        <!-- 新增單字區塊 -->
+        <div id="section-add" class="hidden max-w-md mx-auto bg-white p-8 rounded-2xl shadow-sm">
+            <h2 class="text-xl font-semibold mb-6 text-center">新增客語單字</h2>
+            <form id="add-form" onsubmit="submitWord(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">中文意義 (Meaning)</label>
+                    <input type="text" id="input-meaning" required placeholder="例如：雨傘" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">客語寫法 (Word)</label>
+                    <input type="text" id="input-word" required placeholder="例如：遮仔" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">音標 (Phonetic)</label>
+                    <input type="text" id="input-phonetic" placeholder="例如：zaˋ zaiˊ" class="w-full border border-slate-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <button type="submit" id="btn-submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition">確認新增並同步至雲端</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ 請把下面這行網址換成你的 Google Apps Script 部署網址 ⚠️
+        const API_URL = "https://script.google.com/macros/s/AKfycbxspz-WqolHRSUCrmSVRyVW8_TaKZRHSPxbRW6WsyxNdt50Sxd4Dr8aCQlvxIh1jZa7/exec";
+
+        let allWords = [];
+        let currentQuizList = [];
+        let currentIndex = 0;
+
+        // 頁面載入時先抓取資料
+        window.onload = function() {
+            fetchWords();
+        };
+
+        function fetchWords() {
+            fetch(API_URL)
+                .then(res => res.json())
+                .then(data => {
+                    allWords = data;
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('section-quiz').classList.remove('hidden');
+                    document.getElementById('total-words-count').innerText = allWords.length;
+                })
+                .catch(err => {
+                    alert("載入題庫失敗，請檢查 API 網址或網路連線！");
+                    console.error(err);
+                });
+        }
+
+        // 分頁切換
+        function switchTab(tab) {
+            const quizSec = document.getElementById('section-quiz');
+            const addSec = document.getElementById('section-add');
+            const btnQuiz = document.getElementById('btn-quiz');
+            const btnAdd = document.getElementById('btn-add');
+
+            if (tab === 'quiz') {
+                quizSec.classList.remove('hidden');
+                addSec.classList.add('hidden');
+                btnQuiz.className = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
+                btnAdd.className = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
+            } else {
+                quizSec.classList.add('hidden');
+                addSec.classList.remove('hidden');
+                btnAdd.className = "px-6 py-2 rounded-full font-medium bg-indigo-600 text-white shadow transition";
+                btnQuiz.className = "px-6 py-2 rounded-full font-medium bg-white text-slate-600 shadow transition";
+            }
+        }
+
+        // 開始測驗
+        function startQuiz() {
+            const countInput = parseInt(document.getElementById('question-count').value);
+            if (allWords.length === 0) {
+                alert("目前題庫沒有單字！");
+                return;
+            }
+
+            const count = Math.min(countInput, allWords.length);
+            
+            // 隨機打亂題庫並取指定題數
+            currentQuizList = [...allWords].sort(() => 0.5 - Math.random()).slice(0, count);
+            currentIndex = 0;
+
+            document.getElementById('quiz-setup').classList.add('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-play').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const item = currentQuizList[currentIndex];
+            document.getElementById('quiz-progress').innerText = `第 ${currentIndex + 1} 題 / 共 ${currentQuizList.length} 題`;
+            document.getElementById('quiz-question').innerText = item.Meaning; // 左側中文題目
+
+            // 隱藏解答
+            const ansContent = document.getElementById('quiz-answer-content');
+            ansContent.className = "text-slate-400 italic";
+            ansContent.innerHTML = "(點擊下方按鈕顯示解答)";
+
+            document.getElementById('btn-show-answer').classList.remove('hidden');
+            document.getElementById('btn-next').classList.add('hidden');
+        }
+
+        function revealAnswer() {
+            const item = currentQuizList[currentIndex];
+            const ansContent = document.getElementById('quiz-answer-content');
+            ansContent.className = "text-slate-800";
+            
+            // 顯示客語與音標
+            ansContent.innerHTML = `
+                <div class="text-2xl font-bold text-indigo-600 mb-1">${item.Word}</div>
+                <div class="text-sm text-slate-500 font-mono">${item.Phonetic || ''}</div>
+            `;
+
+            document.getElementById('btn-show-answer').classList.add('hidden');
+            
+            // 如果是最後一題，按鈕文字可以調整或直接下一步
+            if (currentIndex === currentQuizList.length - 1) {
+                document.getElementById('btn-next').innerText = "查看結算";
+            } else {
+                document.getElementById('btn-next').innerText = "下一題";
+            }
+            document.getElementById('btn-next').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex >= currentQuizList.length) {
+                document.getElementById('quiz-play').classList.add('hidden');
+                document.getElementById('quiz-result').classList.remove('hidden');
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function resetQuizSetup() {
+            document.getElementById('quiz-play').classList.add('hidden');
+            document.getElementById('quiz-result').classList.add('hidden');
+            document.getElementById('quiz-setup').classList.remove('hidden');
+            document.getElementById('total-words-count').innerText = allWords.length;
+        }
+
+        // 新增單字送出
+        function submitWord(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerText = "正在寫入雲端...";
+
+            const newWord = {
+                meaning: document.getElementById('input-meaning').value,
+                word: document.getElementById('input-word').value,
+                phonetic: document.getElementById('input-phonetic').value
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(newWord)
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("新增成功！已同步至雲端試算表。");
+                document.getElementById('add-form').reset();
+                btn.disabled = false;
+                btn.innerText = "確認新增並同步至雲端";
+                fetchWords(); // 重新載入最新題庫
+                switchTab('quiz'); // 自動切回測驗區
+            })
+            .catch(err => {
+                alert("新增失敗，請稍後再試！");
+                console.error(err);
+                btn.disabled = false;
+                btn.innerText = "確認新增並同步至雲端";
+            });
+        }
+    </script>
+</body>
+</html>
